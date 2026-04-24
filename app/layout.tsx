@@ -1,32 +1,28 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/components/ui/theme-provider"
+import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "CoPilot Agency",
-  description: "Strategic Communications & Crisis Management",
+  title: "CoPilot Agency - Strategic Communications & AI Business Optimization",
+  description:
+    "Strategic communications, crisis management, reputation support, and AI business optimization for high-stakes organizations.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground pt-10`}>
-        <ThemeProvider forcedTheme="dark">
-          {children}
-          <Toaster />
-        </ThemeProvider>
+    <html lang="en">
+      <body className={`${inter.variable} bg-background text-foreground antialiased`}>
+        {children}
+        <Toaster />
       </body>
     </html>
   );

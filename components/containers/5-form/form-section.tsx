@@ -1,15 +1,14 @@
+"use client";
+
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Loader2 } from 'lucide-react';
-import { industries } from '@/lib/data/industriesSectionData';
-import { formSectionData } from '@/lib/data/formSectionData';
+import { formSectionData } from "@/lib/data/formSectionData";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import {
   Form,
   FormControl,
@@ -18,7 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -26,22 +25,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 const profileFormSchema = z.object({
-  firstName: z.string().min(2, {
+  firstName: z.string().trim().min(2, {
     message: "First name must be at least 2 characters.",
   }),
-  lastName: z.string().min(2, {
+  lastName: z.string().trim().min(2, {
     message: "Last name must be at least 2 characters.",
   }),
-  email: z.string().email({
+  email: z.string().trim().email({
     message: "Please enter a valid email address.",
   }),
-  phone: z.string().optional(),
-  company: z.string().optional(),
-  industry: z.string().optional(),
-  message: z.string().min(10, {
+  serviceInterest: z.string().trim().optional(),
+  message: z.string().trim().min(10, {
     message: "Message must be at least 10 characters.",
   }),
   consent: z.boolean().refine((val) => val === true, {
@@ -51,19 +48,19 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-const defaultValues: Partial<ProfileFormValues> = {
-  firstName: '',
-  lastName: '',
-  email: '',
-  phone: '',
-  company: '',
-  industry: '',
-  message: '',
+const defaultValues: ProfileFormValues = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  serviceInterest: "",
+  message: "",
   consent: false,
 };
 
-export function ProfileForm({ id }: { id?: string }) {
-  const isMobile = useIsMobile();
+const inputClassName =
+  "h-12 rounded-none border-white/[0.08] bg-[#141414] px-5 text-sm text-white placeholder:text-zinc-600 focus-visible:ring-primary";
+
+export function ProfileForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -75,11 +72,12 @@ export function ProfileForm({ id }: { id?: string }) {
 
   async function onSubmit(data: ProfileFormValues) {
     setIsSubmitting(true);
+
     try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
+      const response = await fetch("/api/contact", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
@@ -89,15 +87,19 @@ export function ProfileForm({ id }: { id?: string }) {
           title: formSectionData.toastMessages.success.title,
           description: formSectionData.toastMessages.success.description,
         });
-        form.reset();
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        toast({
-          variant: "destructive",
-          title: formSectionData.toastMessages.error.title,
-          description: errorData.error || formSectionData.toastMessages.error.descriptionDefault,
-        });
+        form.reset(defaultValues);
+        return;
       }
+
+      const errorData = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      toast({
+        variant: "destructive",
+        title: formSectionData.toastMessages.error.title,
+        description:
+          errorData.error || formSectionData.toastMessages.error.descriptionDefault,
+      });
     } catch (error) {
       console.error("Form submission error:", error);
       toast({
@@ -111,173 +113,159 @@ export function ProfileForm({ id }: { id?: string }) {
   }
 
   return (
-    <section id={id} className="bg-background py-16 md:py-20">
-      <div className="container mx-auto px-4">
-        <div className={`max-w-5xl mx-auto ${isMobile ? 'px-0' : ''}`}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="flex flex-col items-center text-center mb-12 md:mb-16"
-          >
-            <div className="bg-[hsl(var(--primary))] w-16 h-16 rounded-2xl flex items-center justify-center mb-6 md:mb-8">
-              <formSectionData.icon className="h-8 w-8 text-black" />
-            </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="firstName"
+            render={({ field }) => (
+              <FormItem>
+                <Label className="form-label">First Name</Label>
+                <FormControl>
+                  <Input
+                    autoComplete="given-name"
+                    placeholder={formSectionData.placeholders.firstName}
+                    className={inputClassName}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-            <h2 className={`${isMobile ? 'text-3xl' : 'text-4xl'} font-bold text-foreground mb-4 md:mb-6`}>
-              {formSectionData.heading}
-            </h2>
-            <p className={`${isMobile ? 'text-base' : 'text-lg'} text-muted-foreground max-w-2xl`}>
-              {formSectionData.description}
-            </p>
-          </motion.div>
+          <FormField
+            control={form.control}
+            name="lastName"
+            render={({ field }) => (
+              <FormItem>
+                <Label className="form-label">Last Name</Label>
+                <FormControl>
+                  <Input
+                    autoComplete="family-name"
+                    placeholder={formSectionData.placeholders.lastName}
+                    className={inputClassName}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-4xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
-              <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input placeholder={formSectionData.placeholders.firstName} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <Label className="form-label">Email</Label>
+              <FormControl>
+                <Input
+                  autoComplete="email"
+                  inputMode="email"
+                  placeholder={formSectionData.placeholders.email}
+                  className={inputClassName}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input placeholder={formSectionData.placeholders.lastName} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input placeholder={formSectionData.placeholders.email} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input placeholder={formSectionData.placeholders.phone} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="company"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input placeholder={formSectionData.placeholders.company} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="industry"
-                render={({ field }) => (
-                  <FormItem>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={formSectionData.placeholders.industry} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {industries.map((industry) => (
-                          <SelectItem key={industry.name} value={industry.name}>
-                            {industry.name}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="message"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Textarea
-                      placeholder={formSectionData.placeholders.message}
-                      className="min-h-[100px]"
-                      {...field}
+        <FormField
+          control={form.control}
+          name="serviceInterest"
+          render={({ field }) => (
+            <FormItem>
+              <Label className="form-label">Service Interest</Label>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className={inputClassName}>
+                    <SelectValue
+                      placeholder={formSectionData.placeholders.serviceInterest}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent className="border-white/[0.08] bg-[#141414] text-white">
+                  {formSectionData.serviceInterestOptions.map((service) => (
+                    <SelectItem key={service} value={service}>
+                      {service}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <FormField
-              control={form.control}
-              name="consent"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow col-span-1 md:col-span-2">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      id="consent-checkbox"
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <Label
-                      htmlFor="consent-checkbox"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      I consent to the processing of my personal data in accordance with the <a href="/privacy-policy" className="text-primary hover:underline">Privacy Policy</a>. I understand that CoPilot Agency will use the information provided to respond to my inquiry and may contact me via email, phone, or messaging. I can withdraw my consent at any time by contacting privacy@copilotagency.com.
-                    </Label>
-                    <FormMessage />
-                  </div>
-                </FormItem>
-              )}
-            />
+        <FormField
+          control={form.control}
+          name="message"
+          render={({ field }) => (
+            <FormItem>
+              <Label className="form-label">Your Situation</Label>
+              <FormControl>
+                <Textarea
+                  placeholder={formSectionData.placeholders.message}
+                  className="min-h-36 resize-y rounded-none border-white/[0.08] bg-[#141414] px-5 py-4 text-sm text-white placeholder:text-zinc-600 focus-visible:ring-primary"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <div className="flex justify-center pt-4">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? formSectionData.buttonText.submitting : formSectionData.buttonText.default}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </div>
-    </section>
+        <FormField
+          control={form.control}
+          name="consent"
+          render={({ field }) => (
+            <FormItem className="flex gap-3 border border-white/[0.08] bg-primary/[0.04] p-4">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  id="consent-checkbox"
+                  className="mt-1"
+                />
+              </FormControl>
+              <div>
+                <Label
+                  htmlFor="consent-checkbox"
+                  className="text-xs font-light leading-6 text-zinc-400"
+                >
+                  By submitting this form you consent to the processing of your
+                  personal data in accordance with our{" "}
+                  <a
+                    href="/privacy-policy"
+                    className="text-primary underline decoration-primary/40 underline-offset-4"
+                  >
+                    Privacy Policy
+                  </a>
+                  . We will use your information solely to respond to your
+                  inquiry.
+                </Label>
+                <FormMessage />
+              </div>
+            </FormItem>
+          )}
+        />
+
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="h-14 w-full rounded-none bg-primary text-xs font-semibold uppercase tracking-[0.08em] text-black hover:bg-primary/90"
+        >
+          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          {isSubmitting
+            ? formSectionData.buttonText.submitting
+            : formSectionData.buttonText.default}
+        </Button>
+      </form>
+    </Form>
   );
 }
