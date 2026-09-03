@@ -8,8 +8,7 @@ interface RequestBody {
   firstName: string;
   lastName: string;
   email: string;
-  company?: string;
-  industry?: string;
+  serviceInterest?: string;
   message: string;
   consent: boolean;
 }
@@ -27,8 +26,7 @@ export async function POST(request: Request) {
       firstName,
       lastName,
       email,
-      company,
-      industry,
+      serviceInterest,
       message,
       consent
     } = body;
@@ -45,8 +43,7 @@ export async function POST(request: Request) {
         firstName,
         lastName,
         email,
-        company,
-        industry,
+        serviceInterest,
         message,
         consent,
       }) as React.ReactElement,
